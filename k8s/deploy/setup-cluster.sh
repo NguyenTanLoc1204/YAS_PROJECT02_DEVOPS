@@ -67,7 +67,8 @@ helm upgrade --install elasticsearch-cluster ./elasticsearch/elasticsearch-clust
 #Install loki
 helm upgrade --install loki grafana/loki \
  --create-namespace --namespace observability \
- -f ./observability/loki.values.yaml
+ -f ./observability/loki.values.yaml \
+ --set loki.useTestSchema=true
 
 #Install tempo
 helm upgrade --install tempo grafana/tempo \
@@ -85,12 +86,12 @@ helm upgrade --install cert-manager jetstack/cert-manager \
   --set admissionWebhooks.certManager.create=true
 
 #Install opentelemetry-operator
-helm upgrade --install opentelemetry-operator open-telemetry/opentelemetry-operator \
---create-namespace --namespace observability
+# helm upgrade --install opentelemetry-operator open-telemetry/opentelemetry-operator \
+# --create-namespace --namespace observability
 
 #Install opentelemetry-collector
-helm upgrade --install opentelemetry-collector ./observability/opentelemetry \
---create-namespace --namespace observability
+# helm upgrade --install opentelemetry-collector ./observability/opentelemetry \
+# --create-namespace --namespace observability
 
 #Install promtail
 helm upgrade --install promtail grafana/promtail \
@@ -103,7 +104,9 @@ postgresql_username="$POSTGRESQL_USERNAME" yq -i '.grafana."grafana.ini".databas
 postgresql_password="$POSTGRESQL_PASSWORD" yq -i '.grafana."grafana.ini".database.password=env(postgresql_password)' ./observability/prometheus.values.yaml
 helm upgrade --install prometheus prometheus-community/kube-prometheus-stack \
  --create-namespace --namespace observability \
--f ./observability/prometheus.values.yaml \
+ -f ./observability/prometheus.values.yaml \
+ --set grafana.assertNoLeakedSecrets=false \
+ --set alertmanager.enabled=false
 
 #Install grafana operator
 helm upgrade --install grafana-operator oci://ghcr.io/grafana-operator/helm-charts/grafana-operator \
@@ -119,5 +122,5 @@ helm upgrade --install grafana ./observability/grafana \
 --set postgresql.username="$POSTGRESQL_USERNAME" \
 --set postgresql.password="$POSTGRESQL_PASSWORD"
 
-helm upgrade --install zookeeper ./zookeeper \
- --namespace zookeeper --create-namespace
+# helm upgrade --install zookeeper ./zookeeper \
+#  --namespace zookeeper --create-namespace

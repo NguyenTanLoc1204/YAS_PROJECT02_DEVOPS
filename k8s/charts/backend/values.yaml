@@ -88,21 +88,32 @@ lifecycle:
 
 terminationGracePeriodSeconds: 45
 
-livenessProbe:
+startupProbe:
+  initialDelaySeconds: 60
   periodSeconds: 10
-  failureThreshold: 12
+  timeoutSeconds: 5
+  failureThreshold: 60
   successThreshold: 1
   httpGet:
     path: /actuator/health/liveness
     port: metric
 
+livenessProbe: {}
+
 readinessProbe:
-  periodSeconds: 10
-  failureThreshold: 12
+  initialDelaySeconds: 180
+  periodSeconds: 20
+  timeoutSeconds: 5
+  failureThreshold: 30
   successThreshold: 1
   httpGet:
     path: /actuator/health/readiness
     port: metric
+
+hostAliases:
+  enabled: false
+  ip: ""
+  hostnames: []
 
 serviceMonitor:
   enabled: true

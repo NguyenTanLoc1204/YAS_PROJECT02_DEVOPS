@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -x
 
 helm repo add stakater https://stakater.github.io/stakater-charts
@@ -7,10 +7,22 @@ helm repo update
 read -rd '' DOMAIN \
 < <(yq -r '.domain' ./cluster-config.yaml)
 
+INGRESS_IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.spec.clusterIP}')
+
+BACKEND_COMMON_ARGS=(
+  --set backend.hostAliases.enabled=true
+  --set-string backend.hostAliases.ip="$INGRESS_IP"
+  --set-string backend.hostAliases.hostnames[0]="identity.$DOMAIN"
+  --set-string backend.hostAliases.hostnames[1]="api.$DOMAIN"
+  --set-string backend.hostAliases.hostnames[2]="storefront.$DOMAIN"
+  --set-string backend.hostAliases.hostnames[3]="backoffice.$DOMAIN"
+)
+
 helm dependency build ../charts/backoffice-bff
 helm upgrade --install backoffice-bff ../charts/backoffice-bff \
 --namespace yas --create-namespace \
---set backend.ingress.host="backoffice.$DOMAIN"
+--set backend.ingress.host="backoffice.$DOMAIN" \
+"${BACKEND_COMMON_ARGS[@]}"
 
 helm dependency build ../charts/backoffice-ui
 helm upgrade --install backoffice-ui ../charts/backoffice-ui \
@@ -21,7 +33,8 @@ sleep 60
 helm dependency build ../charts/storefront-bff
 helm upgrade --install storefront-bff ../charts/storefront-bff \
 --namespace yas --create-namespace \
---set backend.ingress.host="storefront.$DOMAIN"
+--set backend.ingress.host="storefront.$DOMAIN" \
+"${BACKEND_COMMON_ARGS[@]}"
 
 helm dependency build ../charts/storefront-ui
 helm upgrade --install storefront-ui ../charts/storefront-ui \
@@ -40,6 +53,7 @@ for chart in cart customer inventory media order product search tax ; do
     helm dependency build ../charts/"$chart"
     helm upgrade --install "$chart" ../charts/"$chart" \
     --namespace yas --create-namespace \
-    --set backend.ingress.host="api.$DOMAIN"
+    --set backend.ingress.host="api.$DOMAIN" \
+    "${BACKEND_COMMON_ARGS[@]}"
     sleep 60
 done

@@ -25,6 +25,12 @@ spec:
       labels:
         {{- include "backend.selectorLabels" . | nindent 8 }}
     spec:
+      {{- if .Values.hostAliases.enabled }}
+      hostAliases:
+        - ip: {{ .Values.hostAliases.ip | quote }}
+          hostnames:
+            {{- toYaml .Values.hostAliases.hostnames | nindent 12 }}
+      {{- end }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -80,10 +86,22 @@ spec:
               containerPort: {{ .Values.metricPort }}
           lifecycle:
             {{ toYaml .Values.lifecycle | nindent 12 }}
+
+          {{- with .Values.startupProbe }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- if .Values.livenessProbe }}
+          {{- if .Values.livenessProbe.httpGet }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
+          {{- end }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
           readinessProbe:
-            {{- toYaml .Values.readinessProbe | nindent 12 }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
