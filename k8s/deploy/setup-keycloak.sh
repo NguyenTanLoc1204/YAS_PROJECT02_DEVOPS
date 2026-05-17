@@ -1,4 +1,4 @@
-
+#!/usr/bin/env bash
 set -x
 
 #Read configuration value from cluster-config.yaml file
